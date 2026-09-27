@@ -35,19 +35,42 @@ export default function handler(req: IncomingMessage, res: ServerResponse): void
     return;
   }
 
-  let target: URL;
+  let apiURL: URL;
   try {
-    target = new URL(req.url ?? "/", apiOrigin);
+    apiURL = new URL(apiOrigin);
   } catch {
     res.statusCode = 500;
-    res.end("API_ORIGIN must be a valid HTTP(S) URL.");
+    res.end("API_ORIGIN must be a valid URL.");
     return;
   }
 
+  if (
+    (apiURL.protocol !== "https:" && apiURL.protocol !== "http:") ||
+    apiURL.pathname !== "/" ||
+    apiURL.search ||
+    apiURL.hash
+  ) {
+    res.statusCode = 500;
+    res.end("API_ORIGIN must be an HTTP(S) origin without a path.");
+    return;
+  }
+
+  let incomingURL: URL;
+  try {
+    incomingURL = new URL(req.url ?? "/", "http://vercel.invalid");
+  } catch {
+    res.statusCode = 400;
+    res.end("Invalid request URL.");
+    return;
+  }
+
+  const apiPath = incomingURL.pathname.replace(/^\/api(?=\/|$)/, "");
+  const target = new URL(`/api${apiPath}${incomingURL.search}`, apiURL.origin);
+
   const transport =
-    target.protocol === "https:"
+    apiURL.protocol === "https:"
       ? httpsRequest
-      : target.protocol === "http:"
+      : apiURL.protocol === "http:"
         ? httpRequest
         : null;
   if (!transport) {
