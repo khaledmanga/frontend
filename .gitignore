@@ -1,0 +1,22 @@
+# Dependencies and build output
+node_modules/
+/dist/
+/coverage/
+
+# Local environment configuration
+.env
+.env.*
+!.env.example
+!.env.*.example
+
+# TypeScript and generated Vite config output
+*.tsbuildinfo
+/vite.config.js
+/vite.config.d.ts
+
+# Operating system and editor files
+.DS_Store
+Thumbs.db
+.idea/
+*.swp
+*.swo
