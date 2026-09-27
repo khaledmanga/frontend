@@ -1,7 +1,15 @@
 import axios from "axios";
 
+const apiBaseURL =
+  import.meta.env.VITE_API_URL ??
+  (import.meta.env.DEV ? "http://localhost:8080/api" : undefined);
+
+if (!apiBaseURL) {
+  throw new Error("VITE_API_URL must be set for production builds.");
+}
+
 export const apiHttp = axios.create({
-  baseURL: import.meta.env.VITE_API_URL ?? "http://localhost:8080/api",
+  baseURL: apiBaseURL,
   headers: { "Content-Type": "application/json" },
   withCredentials: true,
 });
