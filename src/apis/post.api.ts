@@ -14,12 +14,8 @@ import {
 import { HttpStatus } from "@/constants/httpStatus";
 import { MESSAGES } from "@/constants/messages";
 import { POST_PAGE_SIZE } from "@/constants/pagination";
-import { VALUE_TYPES } from "@/constants/valueTypes";
 import { apiHttp } from "./http";
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === VALUE_TYPES.Object && value !== null;
-}
+import { isNonEmptyString, isNumber, isRecord, isString } from "./utils";
 
 function getString(
   record: Record<string, unknown>,
@@ -27,8 +23,8 @@ function getString(
 ): string | null {
   for (const key of keys) {
     const value = record[key];
-    if (typeof value === VALUE_TYPES.String && value.trim()) return value;
-    if (typeof value === VALUE_TYPES.Number) return String(value);
+    if (isNonEmptyString(value)) return value;
+    if (isNumber(value)) return String(value);
   }
   return null;
 }
@@ -39,8 +35,8 @@ function getNumber(
 ): number {
   for (const key of keys) {
     const value = record[key];
-    if (typeof value === VALUE_TYPES.Number && Number.isFinite(value)) return value;
-    if (typeof value === VALUE_TYPES.String && value.trim() && Number.isFinite(Number(value))) {
+    if (isNumber(value) && Number.isFinite(value)) return value;
+    if (isNonEmptyString(value) && Number.isFinite(Number(value))) {
       return Number(value);
     }
   }
@@ -99,9 +95,7 @@ function unwrapList(data: unknown, keys: string[], depth = 0): unknown[] {
     if (Array.isArray(value)) return value;
   }
   const nested = Object.entries(data).find(([field]) =>
-    API_NESTED_RESPONSE_CONTAINERS.some(
-      (key) => field.toLowerCase() === key,
-    ),
+    API_NESTED_RESPONSE_CONTAINERS.some((key) => field.toLowerCase() === key),
   )?.[1];
   if (nested !== undefined) return unwrapList(nested, keys, depth + 1);
   throw new Error(MESSAGES.invalidListResponse);
@@ -136,11 +130,7 @@ export function normalizePost(value: unknown): ApiPost {
     id,
     title: getString(value, API_FIELDS.Title, API_FIELDS.UppercaseTitle) ?? "",
     body,
-    tags: Array.isArray(rawTags)
-      ? rawTags.filter(
-          (tag): tag is string => typeof tag === VALUE_TYPES.String,
-        )
-      : [],
+    tags: Array.isArray(rawTags) ? rawTags.filter(isString) : [],
     author: getAuthor(
       value[API_FIELDS.Author] ??
         value[API_FIELDS.UppercaseAuthor] ??
@@ -312,19 +302,6 @@ export async function deletePost(id: string): Promise<void> {
   await apiHttp.delete(API_ENDPOINTS.POST_DETAIL(id));
 }
 
-export async function listComments(postId: string): Promise<ApiComment[]> {
-  const { data } = await apiHttp.get<unknown>(
-    API_ENDPOINTS.POST_COMMENTS(postId),
-  );
-  return unwrapList(data, [
-    API_FIELDS.Comments,
-    API_FIELDS.Items,
-    API_FIELDS.Data,
-  ]).flatMap(
-    normalizeCommentTree,
-  );
-}
-
 function normalizeCommentTree(value: unknown): ApiComment[] {
   const comment = normalizeComment(value);
   if (!isRecord(value)) return [comment];
@@ -334,6 +311,17 @@ function normalizeCommentTree(value: unknown): ApiComment[] {
     comment,
     ...(Array.isArray(replies) ? replies.flatMap(normalizeCommentTree) : []),
   ];
+}
+
+export async function listComments(postId: string): Promise<ApiComment[]> {
+  const { data } = await apiHttp.get<unknown>(
+    API_ENDPOINTS.POST_COMMENTS(postId),
+  );
+  return unwrapList(data, [
+    API_FIELDS.Comments,
+    API_FIELDS.Items,
+    API_FIELDS.Data,
+  ]).flatMap(normalizeCommentTree);
 }
 
 export async function createComment(
@@ -368,7 +356,7 @@ export async function unlikePost(id: string): Promise<void> {
 export function getPostsErrorMessage(error: unknown): string {
   if (axios.isAxiosError(error)) {
     const data: unknown = error.response?.data;
-    if (typeof data === VALUE_TYPES.String && data.trim()) return data.trim();
+    if (isNonEmptyString(data)) return data.trim();
     if (isRecord(data)) {
       const message = getString(data, API_FIELDS.Error, API_FIELDS.Message);
       if (message) return message;
@@ -376,13 +364,15 @@ export function getPostsErrorMessage(error: unknown): string {
     if (!error.response) {
       return MESSAGES.cannotReachServer;
     }
-    if (error.response.status === HttpStatus.Unauthorized) return MESSAGES.loginRequiredForPosts;
-    if (error.response.status === HttpStatus.Forbidden) return MESSAGES.permissionDenied;
+    if (error.response.status === HttpStatus.Unauthorized) {
+      return MESSAGES.loginRequiredForPosts;
+    }
+    if (error.response.status === HttpStatus.Forbidden) {
+      return MESSAGES.permissionDenied;
+    }
     return error.response.status >= HttpStatus.InternalServerError
       ? MESSAGES.serverUnavailable
       : MESSAGES.requestFailed;
   }
-  return error instanceof Error
-    ? error.message
-    : MESSAGES.requestFailed;
+  return error instanceof Error ? error.message : MESSAGES.requestFailed;
 }

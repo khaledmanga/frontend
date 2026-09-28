@@ -4,7 +4,7 @@ import { API_ENDPOINTS } from "@/constants/apiEndpoints";
 import { API_ERROR_FIELDS, API_FIELDS } from "@/constants/apiFields";
 import { HttpStatus } from "@/constants/httpStatus";
 import { MESSAGES } from "@/constants/messages";
-import { VALUE_TYPES } from "@/constants/valueTypes";
+import { isNonEmptyString, isNumber, isRecord, isString } from "./utils";
 import { apiHttp } from "./http";
 
 export class InvalidAuthResponseError extends Error {
@@ -13,8 +13,12 @@ export class InvalidAuthResponseError extends Error {
   }
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === VALUE_TYPES.Object && value !== null;
+function pickString(
+  record: Record<string, unknown>,
+  key: string,
+): string | undefined {
+  const value = record[key];
+  return isNonEmptyString(value) ? value : undefined;
 }
 
 export function normalizeAuthUser(
@@ -22,36 +26,23 @@ export function normalizeAuthUser(
   fallback?: { email?: string; name?: string },
 ): AuthUser {
   const response = isRecord(data) ? data : {};
-  const source = isRecord(response[API_FIELDS.User])
-    ? response[API_FIELDS.User]
-    : response;
-  const id =
-    typeof source[API_FIELDS.Id] === VALUE_TYPES.String ||
-    typeof source[API_FIELDS.Id] === VALUE_TYPES.Number
-      ? String(source[API_FIELDS.Id])
-      : null;
-  const email =
-    typeof source[API_FIELDS.Email] === VALUE_TYPES.String &&
-    source[API_FIELDS.Email].trim()
-      ? source[API_FIELDS.Email]
-      : fallback?.email;
+  const userValue = response[API_FIELDS.User];
+  const source = isRecord(userValue) ? userValue : response;
+
+  const rawId = source[API_FIELDS.Id];
+  const id = isString(rawId) || isNumber(rawId) ? String(rawId) : null;
+
+  const email = pickString(source, API_FIELDS.Email) ?? fallback?.email;
   const name =
-    (typeof source[API_FIELDS.Name] === VALUE_TYPES.String &&
-    source[API_FIELDS.Name].trim()
-      ? source[API_FIELDS.Name]
-      : typeof source[API_FIELDS.Username] === VALUE_TYPES.String &&
-          source[API_FIELDS.Username].trim()
-        ? source[API_FIELDS.Username]
-        : fallback?.name?.trim()) ||
-    (email ? email.split("@")[0] : null);
+    pickString(source, API_FIELDS.Name) ??
+    pickString(source, API_FIELDS.Username) ??
+    (fallback?.name?.trim() || undefined) ??
+    (email ? email.split("@")[0] : undefined);
+
   if (!id || !email || !name) {
     throw new InvalidAuthResponseError();
   }
-  return {
-    id,
-    email,
-    name,
-  };
+  return { id, email, name };
 }
 
 export async function loginApi(credentials: Credentials): Promise<AuthUser> {
@@ -83,20 +74,21 @@ export async function logoutApi(): Promise<void> {
 }
 
 function getServerErrorMessage(data: unknown): string | null {
-  if (typeof data === VALUE_TYPES.String) {
+  let parsed: unknown = data;
+  if (isString(data)) {
     const text = data.trim();
     if (!text) return null;
     try {
-      data = JSON.parse(text);
+      parsed = JSON.parse(text);
     } catch {
       return text;
     }
   }
-  if (!isRecord(data)) return null;
+  if (!isRecord(parsed)) return null;
 
   for (const key of API_ERROR_FIELDS) {
-    const message = Object.entries(data).find(([field]) => field === key)?.[1];
-    if (typeof message === VALUE_TYPES.String && message.trim()) return message.trim();
+    const message = parsed[key];
+    if (isNonEmptyString(message)) return message.trim();
   }
   return null;
 }
@@ -107,8 +99,7 @@ export function getAuthErrorMessage(error: unknown): string {
       ? MESSAGES.invalidAuthResponse
       : MESSAGES.unexpectedError;
   }
-  if (!error.response)
-    return MESSAGES.cannotReachServer;
+  if (!error.response) return MESSAGES.cannotReachServer;
   if (error.response.status === HttpStatus.Unauthorized) {
     return MESSAGES.invalidCredentials;
   }
