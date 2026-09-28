@@ -1,13 +1,15 @@
 import { Link } from "@tanstack/react-router";
 import { Zap } from "lucide-react";
-import { useAuth } from "@/store/auth/useAuth";
+import { MESSAGES } from "@/constants/messages";
+import { ROUTES } from "@/constants/routes";
+import { useAuth } from "@/hooks/useAuth";
 
 export function Navbar() {
   const { user } = useAuth();
 
   return (
     <header className="topbar">
-      <Link to="/" className="brand" aria-label="Loop home">
+      <Link to={ROUTES.HOME} className="brand" aria-label={MESSAGES.loopHome}>
         <span className="brand-mark">
           <Zap size={18} fill="currentColor" />
         </span>
@@ -18,11 +20,11 @@ export function Navbar() {
           <span className="auth-user-name">{user.name}</span>
         ) : (
           <>
-            <Link to="/login" className="auth-nav-link">
-              Log in
+            <Link to={ROUTES.LOGIN} className="auth-nav-link">
+              {MESSAGES.login}
             </Link>
-            <Link to="/register" className="auth-nav-join">
-              Create an account
+            <Link to={ROUTES.REGISTER} className="auth-nav-join">
+              {MESSAGES.authCreateAccount}
             </Link>
           </>
         )}

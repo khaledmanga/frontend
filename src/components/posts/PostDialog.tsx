@@ -1,6 +1,12 @@
-import { type FormEvent, useState } from "react";
-import type { ApiPost } from "@/api/postsApi";
 import { X } from "lucide-react";
+import { type FormEvent, useState } from "react";
+import type { ApiPost } from "@/@types/post";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
+import { Textarea } from "@/components/ui/Textarea";
+import { MESSAGES } from "@/constants/messages";
+import { BUTTON_VARIANTS } from "@/constants/ui";
+import { VALIDATION_LIMITS } from "@/constants/validation";
 
 type PostDialogProps = {
   post?: ApiPost;
@@ -37,34 +43,41 @@ export function PostDialog({
         onSubmit={(event) => void submit(event)}
       >
         <header>
-          <button type="button" onClick={onClose} aria-label="Close">
+          <Button variant={BUTTON_VARIANTS.Unstyled} type="button" onClick={onClose} aria-label={MESSAGES.close}>
             <X size={20} />
-          </button>
-          <h2 id="post-dialog-title">{post ? "Edit post" : "New post"}</h2>
-          <button
+          </Button>
+          <h2 id="post-dialog-title">{post ? MESSAGES.editPost : MESSAGES.newPost}</h2>
+          <Button
+            variant={BUTTON_VARIANTS.Unstyled}
             type="submit"
             className="text-action"
             disabled={!title.trim() || !body.trim() || saving}
           >
-            {saving ? "Saving..." : post ? "Save" : "Publish"}
-          </button>
+            {saving
+              ? MESSAGES.saving
+              : post
+                ? MESSAGES.save
+                : MESSAGES.publish}
+          </Button>
         </header>
-        <input
+        <Input
+          unstyled
           className="post-title-input"
           value={title}
-          maxLength={200}
+          maxLength={VALIDATION_LIMITS.PostTitleMaxLength}
           onChange={(event) => setTitle(event.target.value)}
-          placeholder="Title"
-          aria-label="Post title"
+          placeholder={MESSAGES.postTitle}
+          aria-label={MESSAGES.postTitleLabel}
           required
         />
-        <textarea
+        <Textarea
+          unstyled
           autoFocus
           value={body}
-          maxLength={10000}
+          maxLength={VALIDATION_LIMITS.PostBodyMaxLength}
           onChange={(event) => setBody(event.target.value)}
-          placeholder="What would you like to share?"
-          aria-label="Post body"
+          placeholder={MESSAGES.postBodyPlaceholder}
+          aria-label={MESSAGES.postBodyLabel}
           required
         />
       </form>

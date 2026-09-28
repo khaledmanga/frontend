@@ -1,5 +1,5 @@
-﻿import type { HTMLAttributes, ReactNode } from 'react';
-import { cn } from '@/lib/utils';
+import type { HTMLAttributes, ReactNode } from 'react';
+import { cn } from '@/helpers/utils';
 
 export function Message({ children, className, ...props }: HTMLAttributes<HTMLDivElement> & { children?: ReactNode }) {
   return <div data-slot="message" className={cn('rounded-lg', className)} {...props}>{children}</div>;

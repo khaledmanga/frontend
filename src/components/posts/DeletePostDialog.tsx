@@ -1,5 +1,8 @@
 import { Trash2 } from "lucide-react";
-import type { ApiPost } from "@/api/postsApi";
+import type { ApiPost } from "@/@types/post";
+import { Button } from "@/components/ui/Button";
+import { MESSAGES } from "@/constants/messages";
+import { BUTTON_VARIANTS } from "@/constants/ui";
 
 type DeletePostDialogProps = {
   post: ApiPost;
@@ -26,8 +29,8 @@ export function DeletePostDialog({
         <span className="delete-modal-icon">
           <Trash2 size={20} />
         </span>
-        <h2 id="delete-post-title">Delete this post?</h2>
-        <p>This will permanently remove your post and can&apos;t be undone.</p>
+        <h2 id="delete-post-title">{MESSAGES.deletePostConfirmTitle}</h2>
+        <p>{MESSAGES.deletePostConfirmDescription}</p>
         <div className="delete-modal-preview">
           <span>
             {post.title ? `${post.title}: ` : ""}
@@ -35,17 +38,18 @@ export function DeletePostDialog({
           </span>
         </div>
         <div className="delete-modal-actions">
-          <button type="button" className="secondary-button" onClick={onCancel}>
-            Cancel
-          </button>
-          <button
+          <Button variant={BUTTON_VARIANTS.Unstyled} type="button" className="secondary-button" onClick={onCancel}>
+            {MESSAGES.cancel}
+          </Button>
+          <Button
+            variant={BUTTON_VARIANTS.Unstyled}
             type="button"
             className="delete-confirm-button"
             disabled={deleting}
             onClick={onConfirm}
           >
-            {deleting ? "Deleting..." : "Delete post"}
-          </button>
+            {deleting ? MESSAGES.deletingPost : MESSAGES.deletePost}
+          </Button>
         </div>
       </section>
     </div>

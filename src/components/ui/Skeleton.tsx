@@ -1,2 +1,2 @@
-import { cn } from "@/lib/utils";
+import { cn } from "@/helpers/utils";
 export function Skeleton({ className = "" }: { className?: string }) { return <div data-slot="skeleton" className={cn("animate-pulse rounded-md bg-black/10", className)} />; }

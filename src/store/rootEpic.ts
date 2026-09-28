@@ -4,7 +4,7 @@ import {
   logoutEpic,
   registerEpic,
   sessionCheckEpic,
-} from "./auth/authEpics";
+} from "./authEpics";
 
 export const rootEpic = combineEpics(
   loginEpic,

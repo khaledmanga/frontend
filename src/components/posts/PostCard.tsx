@@ -7,8 +7,14 @@ import {
   Pencil,
   Trash2,
 } from "lucide-react";
-import { useState, type FormEvent } from "react";
-import type { ApiComment, ApiPost } from "@/api/postsApi";
+import { type FormEvent, useState } from "react";
+import type { ApiComment, ApiPost } from "@/@types/post";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
+import { MESSAGES } from "@/constants/messages";
+import { ROUTES } from "@/constants/routes";
+import { BUTTON_VARIANTS } from "@/constants/ui";
+import { VALIDATION_LIMITS } from "@/constants/validation";
 import { Avatar } from "./Avatar";
 
 type PostCardProps = {
@@ -83,24 +89,25 @@ export function PostCard({
                 className="comment-form comment-inline-form comment-edit-form"
                 onSubmit={(event) => void submitCommentEdit(event, item.id)}
               >
-                <input
+                <Input
+                  unstyled
                   value={commentDrafts[item.id] ?? item.body}
-                  maxLength={5000}
+                  maxLength={VALIDATION_LIMITS.CommentMaxLength}
                   onChange={(event) =>
                     setCommentDrafts((current) => ({
                       ...current,
                       [item.id]: event.target.value,
                     }))
                   }
-                  aria-label="Edit comment"
+                  aria-label={MESSAGES.editComment}
                 />
                 <div className="reply-actions">
-                  <button type="submit" disabled={pendingComment}>
-                    Save
-                  </button>
-                  <button type="button" onClick={() => setEditingComment(null)}>
-                    Cancel
-                  </button>
+                  <Button variant={BUTTON_VARIANTS.Unstyled} type="submit" disabled={pendingComment}>
+                    {MESSAGES.save}
+                  </Button>
+                  <Button variant={BUTTON_VARIANTS.Unstyled} type="button" onClick={() => setEditingComment(null)}>
+                    {MESSAGES.cancel}
+                  </Button>
                 </div>
               </form>
             ) : (
@@ -110,7 +117,8 @@ export function PostCard({
             )}
             <div className="comment-meta">
               {userId && (
-                <button
+                <Button
+                  variant={BUTTON_VARIANTS.Unstyled}
                   type="button"
                   onClick={() => {
                     setReplyingTo((current) =>
@@ -118,12 +126,13 @@ export function PostCard({
                     );
                   }}
                 >
-                  Reply
-                </button>
+                  {MESSAGES.reply}
+                </Button>
               )}
               {canManageComment && editingComment !== item.id && (
                 <>
-                  <button
+                  <Button
+                    variant={BUTTON_VARIANTS.Unstyled}
                     type="button"
                     onClick={() => {
                       setCommentDrafts((current) => ({
@@ -133,15 +142,16 @@ export function PostCard({
                       setEditingComment(item.id);
                     }}
                   >
-                    Edit
-                  </button>
-                  <button
+                    {MESSAGES.edit}
+                  </Button>
+                  <Button
+                    variant={BUTTON_VARIANTS.Unstyled}
                     type="button"
                     disabled={pendingComment}
                     onClick={() => void removeComment(item.id)}
                   >
-                    Delete
-                  </button>
+                    {MESSAGES.delete}
+                  </Button>
                 </>
               )}
             </div>
@@ -150,28 +160,30 @@ export function PostCard({
                 className="comment-form comment-inline-form nested-comment-form"
                 onSubmit={(event) => void submitReply(event, item.id)}
               >
-                <input
+                <Input
+                  unstyled
                   value={replyDrafts[item.id] ?? ""}
-                  maxLength={5000}
+                  maxLength={VALIDATION_LIMITS.CommentMaxLength}
                   onChange={(event) =>
                     setReplyDrafts((current) => ({
                       ...current,
                       [item.id]: event.target.value,
                     }))
                   }
-                  placeholder={`Reply to ${item.author.name}...`}
+                  placeholder={MESSAGES.replyTo(item.author.name)}
                   aria-label={`Reply to ${item.author.name}`}
                 />
                 <div className="reply-actions">
-                  <button
+                  <Button
+                    variant={BUTTON_VARIANTS.Unstyled}
                     type="submit"
                     disabled={!replyDrafts[item.id]?.trim() || pendingComment}
                   >
-                    Send
-                  </button>
-                  <button type="button" onClick={() => setReplyingTo(null)}>
-                    Cancel
-                  </button>
+                    {MESSAGES.send}
+                  </Button>
+                  <Button variant={BUTTON_VARIANTS.Unstyled} type="button" onClick={() => setReplyingTo(null)}>
+                    {MESSAGES.cancel}
+                  </Button>
                 </div>
               </form>
             )}
@@ -259,18 +271,20 @@ export function PostCard({
         </div>
         {canManage && (
           <div className="post-menu-wrap">
-            <button
+            <Button
+              variant={BUTTON_VARIANTS.Unstyled}
               type="button"
               className="icon-button"
-              aria-label="Post options"
+              aria-label={MESSAGES.postOptions}
               aria-expanded={menuOpen}
               onClick={() => setMenuOpen((open) => !open)}
             >
               <MoreHorizontal size={21} />
-            </button>
+            </Button>
             {menuOpen && (
               <div className="post-menu" role="menu">
-                <button
+                <Button
+                  variant={BUTTON_VARIANTS.Unstyled}
                   type="button"
                   role="menuitem"
                   onClick={() => {
@@ -279,9 +293,10 @@ export function PostCard({
                   }}
                 >
                   <Pencil size={15} />
-                  Edit post
-                </button>
-                <button
+                  {MESSAGES.editPost}
+                </Button>
+                <Button
+                  variant={BUTTON_VARIANTS.Unstyled}
                   type="button"
                   role="menuitem"
                   className="delete-menu-item"
@@ -291,8 +306,8 @@ export function PostCard({
                   }}
                 >
                   <Trash2 size={15} />
-                  Delete post
-                </button>
+                  {MESSAGES.deletePost}
+                </Button>
               </div>
             )}
           </div>
@@ -311,35 +326,39 @@ export function PostCard({
       </div>
       <div className="post-actions">
         <div className="post-action-group">
-          <button
+          <Button
+            variant={BUTTON_VARIANTS.Unstyled}
             type="button"
             className={`icon-button${post.voted ? " liked" : ""}`}
-            aria-label={post.voted ? "Unlike post" : "Like post"}
+            aria-label={
+              post.voted ? MESSAGES.unlikePost : MESSAGES.likePost
+            }
             onClick={onLike}
             disabled={likePending}
           >
             <Heart size={21} fill={post.voted ? "currentColor" : "none"} />
             <span>{post.votes}</span>
-          </button>
-          <button
+          </Button>
+          <Button
+            variant={BUTTON_VARIANTS.Unstyled}
             type="button"
             className="icon-button"
-            aria-label="Show comments"
+            aria-label={MESSAGES.showComments}
             aria-expanded={commentsOpen}
             onClick={toggleComments}
           >
             <MessageCircle size={20} />
             <span>{post.commentCount}</span>
-          </button>
+          </Button>
         </div>
       </div>
       {commentsOpen && (
         <section
           className="comments-panel"
-          aria-label={`Comments on ${post.title || "post"}`}
+          aria-label={MESSAGES.commentsOnPost(post.title)}
         >
           {commentsLoading ? (
-            <p>Loading comments...</p>
+            <p>{MESSAGES.loadingComments}</p>
           ) : (
             comments
               .filter((item) => item.parentId === null)
@@ -350,24 +369,26 @@ export function PostCard({
               className="comment-form root-comment-form"
               onSubmit={submitComment}
             >
-              <input
+              <Input
+                unstyled
                 value={comment}
-                maxLength={5000}
+                maxLength={VALIDATION_LIMITS.CommentMaxLength}
                 onChange={(event) => setComment(event.target.value)}
-                placeholder="Add a comment..."
-                aria-label="Write a comment"
+                placeholder={MESSAGES.addComment}
+                aria-label={MESSAGES.writeComment}
               />
-              <button
+              <Button
+                variant={BUTTON_VARIANTS.Unstyled}
                 type="submit"
-                aria-label="Send comment"
+                aria-label={MESSAGES.sendComment}
                 disabled={!comment.trim() || pendingComment}
               >
                 <ArrowUpRight size={18} />
-              </button>
+              </Button>
             </form>
           ) : (
             <p className="comments-link">
-              <Link to="/login">Log in to comment</Link>
+              <Link to={ROUTES.LOGIN}>{MESSAGES.loginToComment}</Link>
             </p>
           )}
         </section>
